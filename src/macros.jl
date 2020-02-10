@@ -181,6 +181,11 @@ function parse_constraint(_error::Function, sense::Symbol, lhs, rhs)
     vectorized, parse_one_operator_constraint(_error, vectorized, Val(sense), lhs, rhs)...
 end
 
+function parse_constraint(_error::Function, sense::Symbol, F)
+    (sense, vectorized) = _check_vectorized(sense)
+    vectorized, parse_one_operator_constraint(_error, vectorized, Val(sense), F)...
+end
+
 function parse_ternary_constraint(_error::Function, vectorized::Bool, lb, ::Union{Val{:(<=)}, Val{:(≤)}}, aff, rsign::Union{Val{:(<=)}, Val{:(≤)}}, ub)
     newaff, parseaff = _MA.rewrite(aff)
     newlb, parselb = _MA.rewrite(lb)
@@ -310,6 +315,9 @@ end
 
 # TODO: update 3-argument @constraint macro to pass through names like @variable
 
+is_one_argument_constraint(_) = false
+is_one_argument_constraint(::Val{:alldifferent}) = true
+
 """
     _constraint_macro(args, macro_name::Symbol, parsefun::Function)
 
@@ -368,7 +376,11 @@ function _constraint_macro(args, macro_name::Symbol, parsefun::Function)
     # in a function returning `ConstraintRef`s and give it to `Containers.container`.
     idxvars, indices = Containers._build_ref_sets(_error, c)
 
-    vectorized, parsecode, buildcall = parsefun(_error, x.args...)
+    if x.args[1] != :call || !is_one_argument_constraint(Val(x.args[1]))
+        vectorized, parsecode, buildcall = parsefun(_error, x.args...)
+    else
+        vectorized, parsecode, buildcall = parsefun(_error, x.args[1], x.args[2:end])
+    end
     _add_kw_args(buildcall, kw_args)
     if vectorized
         # TODO: Pass through names here.
