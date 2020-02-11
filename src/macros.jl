@@ -376,7 +376,9 @@ function _constraint_macro(args, macro_name::Symbol, parsefun::Function)
     # in a function returning `ConstraintRef`s and give it to `Containers.container`.
     idxvars, indices = Containers._build_ref_sets(_error, c)
 
-    if x.args[1] != :call || !is_one_argument_constraint(Val(x.args[1]))
+    if x.head == :(:=)
+        vectorized, parsecode, buildcall = parsefun(_error, x.head, x.args...)
+    elseif x.args[1] != :call  || !is_one_argument_constraint(Val(x.args[1]))
         vectorized, parsecode, buildcall = parsefun(_error, x.args...)
     else
         vectorized, parsecode, buildcall = parsefun(_error, x.args[1], x.args[2:end])
