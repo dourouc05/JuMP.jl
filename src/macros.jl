@@ -176,14 +176,9 @@ function parse_one_operator_constraint(_error::Function, vectorized::Bool, sense
     return parse_code, _build_call(_error, vectorized, :(_functionize($variable)), set)
 end
 
-function parse_constraint(_error::Function, sense::Symbol, lhs, rhs)
+function parse_constraint(_error::Function, sense::Symbol, args...)
     (sense, vectorized) = _check_vectorized(sense)
-    vectorized, parse_one_operator_constraint(_error, vectorized, Val(sense), lhs, rhs)...
-end
-
-function parse_constraint(_error::Function, sense::Symbol, F)
-    (sense, vectorized) = _check_vectorized(sense)
-    vectorized, parse_one_operator_constraint(_error, vectorized, Val(sense), F)...
+    vectorized, parse_one_operator_constraint(_error, vectorized, Val(sense), args...)...
 end
 
 function parse_ternary_constraint(_error::Function, vectorized::Bool, lb, ::Union{Val{:(<=)}, Val{:(≤)}}, aff, rsign::Union{Val{:(<=)}, Val{:(≤)}}, ub)
@@ -315,8 +310,7 @@ end
 
 # TODO: update 3-argument @constraint macro to pass through names like @variable
 
-is_one_argument_constraint(_) = false
-is_one_argument_constraint(::Val{:alldifferent}) = true
+is_one_argument_constraint(::Val) = false
 
 """
     _constraint_macro(args, macro_name::Symbol, parsefun::Function)

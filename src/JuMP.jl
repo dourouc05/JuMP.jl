@@ -863,8 +863,6 @@ include("indicator.jl")
 include("complement.jl")
 # SDConstraint
 include("sd.jl")
-# Constraint programming
-include("cp.jl")
 
 """
     Base.getindex(m::JuMP.AbstractModel, name::Symbol)
