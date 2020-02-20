@@ -176,9 +176,14 @@ function parse_one_operator_constraint(_error::Function, vectorized::Bool, sense
     return parse_code, _build_call(_error, vectorized, :(_functionize($variable)), set)
 end
 
-function parse_constraint(_error::Function, sense::Symbol, args...)
+function parse_constraint(_error::Function, sense::Symbol, lhs, rhs)
     (sense, vectorized) = _check_vectorized(sense)
-    vectorized, parse_one_operator_constraint(_error, vectorized, Val(sense), args...)...
+    vectorized, parse_one_operator_constraint(_error, vectorized, Val(sense), lhs, rhs)...
+end
+
+function parse_constraint(_error::Function, sense::Symbol, F)
+    (sense, vectorized) = _check_vectorized(sense)
+    vectorized, parse_one_operator_constraint(_error, vectorized, Val(sense), F)...
 end
 
 function parse_ternary_constraint(_error::Function, vectorized::Bool, lb, ::Union{Val{:(<=)}, Val{:(≤)}}, aff, rsign::Union{Val{:(<=)}, Val{:(≤)}}, ub)
