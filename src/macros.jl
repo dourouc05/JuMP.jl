@@ -375,7 +375,7 @@ function _constraint_macro(args, macro_name::Symbol, parsefun::Function)
     elseif x.head != :call  || !is_one_argument_constraint(Val(x.args[1]))
         vectorized, parsecode, buildcall = parsefun(_error, x.args...)
     else
-        vectorized, parsecode, buildcall = parsefun(_error, x.args[1], x.args[2:end])
+        vectorized, parsecode, buildcall = parsefun(_error, x.args[1], :([$(x.args[2:end]...)]))
     end
     _add_kw_args(buildcall, kw_args)
     if vectorized
