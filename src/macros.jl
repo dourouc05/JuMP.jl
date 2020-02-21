@@ -159,7 +159,7 @@ end
 _functionize(v::VariableRef) = convert(AffExpr, v)
 _functionize(v::AbstractArray{VariableRef}) = _functionize.(v)
 _functionize(x) = x
-function parse_one_operator_constraint(_error::Function, vectorized::Bool, sense::Val, lhs, rhs)
+function parse_one_operator_constraint(_error::Function, vectorized::Bool, sense::Union{Val{:(<=)}, Val{:(≤)}, Val{:(>=)}, Val{:(≥)}, Val{:(==)}}, lhs, rhs)
     # Simple comparison - move everything to the LHS.
     #
     # Note: We add the +0 to this term to account for the pathological case that
@@ -172,18 +172,15 @@ function parse_one_operator_constraint(_error::Function, vectorized::Bool, sense
         func = :($lhs - $rhs)
     end
     set = sense_to_set(_error, sense)
+    println(func)
     variable, parse_code = _MA.rewrite(func)
     return parse_code, _build_call(_error, vectorized, :(_functionize($variable)), set)
 end
 
-function parse_constraint(_error::Function, sense::Symbol, lhs, rhs)
-    (sense, vectorized) = _check_vectorized(sense)
-    vectorized, parse_one_operator_constraint(_error, vectorized, Val(sense), lhs, rhs)...
-end
-
-function parse_constraint(_error::Function, sense::Symbol, F)
-    (sense, vectorized) = _check_vectorized(sense)
-    vectorized, parse_one_operator_constraint(_error, vectorized, Val(sense), F)...
+function parse_constraint(_error::Function, ::Val{:call}, sense::Union{Val{:(<=)}, Val{:(≤)}, Val{:(>=)}, Val{:(≥)}, Val{:(==)}}, F...)
+    sense_symbol = typeof(sense).parameters[1]
+    (sense, vectorized) = _check_vectorized(sense_symbol)
+    vectorized, parse_one_operator_constraint(_error, vectorized, Val(sense), F...)
 end
 
 function parse_ternary_constraint(_error::Function, vectorized::Bool, lb, ::Union{Val{:(<=)}, Val{:(≤)}}, aff, rsign::Union{Val{:(<=)}, Val{:(≤)}}, ub)
@@ -206,7 +203,7 @@ function parse_ternary_constraint(_error::Function, args...)
     _error("Only two-sided rows of the form lb <= expr <= ub or ub >= expr >= lb are supported.")
 end
 
-function parse_constraint(_error::Function, lb, lsign::Symbol, aff, rsign::Symbol, ub)
+function parse_constraint(_error::Function, ::Val{:comparison}, lb, lsign::Symbol, aff, rsign::Symbol, ub)
     (lsign, lvectorized) = _check_vectorized(lsign)
     (rsign, rvectorized) = _check_vectorized(rsign)
     ((vectorized = lvectorized) == rvectorized) || _error("Signs are inconsistently vectorized")
@@ -220,6 +217,7 @@ function parse_constraint(_error::Function, lb, lsign::Symbol, aff, rsign::Symbo
 end
 
 function parse_constraint(_error::Function, args...)
+    println(args)
     # Unknown
     _error("Constraints must be in one of the following forms:\n" *
           "       expr1 <= expr2\n" * "       expr1 >= expr2\n" *
@@ -375,13 +373,18 @@ function _constraint_macro(args, macro_name::Symbol, parsefun::Function)
     # in a function returning `ConstraintRef`s and give it to `Containers.container`.
     idxvars, indices = Containers._build_ref_sets(_error, c)
 
-    if x.head == :(:=)
-        vectorized, parsecode, buildcall = parsefun(_error, x.head, x.args...)
-    elseif x.head != :call  || !is_one_argument_constraint(Val(x.args[1]))
-        vectorized, parsecode, buildcall = parsefun(_error, x.args...)
+    if x.head == :call
+        vectorized, parsecode, buildcall = parsefun(_error, Val(x.head), Val(x.args[1]), x.args[2:end]...)
     else
-        vectorized, parsecode, buildcall = parsefun(_error, x.args[1], :([$(x.args[2:end]...)]))
+        vectorized, parsecode, buildcall = parsefun(_error, Val(x.head), x.args...)
     end
+    # if x.head == :(:=)
+    #     vectorized, parsecode, buildcall = parsefun(_error, x.head, x.args...)
+    # elseif x.head != :call  || !is_one_argument_constraint(Val(x.args[1]))
+    #     vectorized, parsecode, buildcall = parsefun(_error, x.args...)
+    # else
+    #     vectorized, parsecode, buildcall = parsefun(_error, x.args[1], :([$(x.args[2:end]...)]))
+    # end
     _add_kw_args(buildcall, kw_args)
     if vectorized
         # TODO: Pass through names here.
@@ -467,7 +470,7 @@ macro constraint(args...)
     _constraint_macro(args, :constraint, parse_constraint)
 end
 
-function parse_SD_constraint(_error::Function, sense::Symbol, lhs, rhs)
+function parse_SD_constraint(_error::Function, ::Val{:call}, sense::Symbol, lhs, rhs)
     # Simple comparison - move everything to the LHS
     aff = :()
     if sense == :⪰ || sense == :(≥) || sense == :(>=)
