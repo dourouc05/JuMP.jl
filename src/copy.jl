@@ -89,7 +89,7 @@ x_new = reference_map[x]
 cref_new = reference_map[cref]
 ```
 """
-function copy_model(model::Model, 
+function copy_model(model::Model;
                     filter_constraints::Union{Nothing, Function}=nothing)
     if mode(model) == DIRECT
         error("Cannot copy a model in `DIRECT` mode. Use the `Model` ",

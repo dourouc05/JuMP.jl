@@ -496,7 +496,7 @@ function JuMP.copy_extension_data(
 end
 function dummy_optimizer_hook(::JuMP.AbstractModel) end
 
-function copy_model_style_mode(use_copy_model, caching_mode)
+function copy_model_style_mode(use_copy_model, caching_mode, filter_mode)
     model = Model(caching_mode = caching_mode)
     model.optimize_hook = dummy_optimizer_hook
     data = DummyExtensionData(model)
@@ -507,7 +507,12 @@ function copy_model_style_mode(use_copy_model, caching_mode)
     @constraint(model, cref, x + y == 1)
 
     if use_copy_model
-        new_model, reference_map = JuMP.copy_model(model)
+        if filter_mode
+            filter_constraints = (cr) -> cr != cref
+            new_model, reference_map = JuMP.copy_model(model, filter_constraints=filter_constraints)
+        else
+            new_model, reference_map = JuMP.copy_model(model)
+        end
     else
         new_model = copy(model)
         reference_map = Dict{
@@ -542,13 +547,18 @@ function copy_model_style_mode(use_copy_model, caching_mode)
               @inferred JuMP.IntegerRef(y_new)
         @test reference_map[JuMP.FixRef(z)] == @inferred JuMP.FixRef(z_new)
     end
-    cref_new = reference_map[cref]
-    @test cref_new.model === new_model
-    @test "cref" == @inferred JuMP.name(cref_new)
+
+    if filter_mode
+        @test_throws KeyError JuMP.object_dictionary(new_model)[JuMP.name(cref)]
+    else
+        cref_new = reference_map[cref]
+        @test cref_new.model === new_model
+        @test "cref" == @inferred JuMP.name(cref_new)
+    end
 end
 
 function test_copy_model_jump_auto()
-    return copy_model_style_mode(true, MOIU.AUTOMATIC)
+    return copy_model_style_mode(true, MOIU.AUTOMATIC, false)
 end
 
 function test_compute_conflict()
@@ -558,13 +568,13 @@ function test_compute_conflict()
 end
 
 function test_copy_model_base_auto()
-    return copy_model_style_mode(false, MOIU.AUTOMATIC)
+    return copy_model_style_mode(false, MOIU.AUTOMATIC, false)
 end
 function test_copy_model_jump_manual()
-    return copy_model_style_mode(true, MOIU.MANUAL)
+    return copy_model_style_mode(true, MOIU.MANUAL, false)
 end
 function test_copy_model_base_manual()
-    return copy_model_style_mode(false, MOIU.MANUAL)
+    return copy_model_style_mode(false, MOIU.MANUAL, false)
 end
 
 function test_copy_direct_mode()
@@ -596,6 +606,8 @@ function test_haskey()
     @variable(model, p[i = 1:10] >= 0)
     @test haskey(model, :p)
     @test !haskey(model, :i)
+function test_copy_filter()
+    copy_model_style_mode(true, MOIU.AUTOMATIC, true)
 end
 
 function runtests()
