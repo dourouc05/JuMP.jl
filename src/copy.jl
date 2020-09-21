@@ -169,6 +169,47 @@ function Base.copy(model::AbstractModel)
     return new_model
 end
 
+"""
+    copy_conflict(model::Model)
+
+Return a copy of the current conflict for the model `model` and a 
+[`ReferenceMap`](@ref) that can be used to obtain the variable and constraint 
+reference of the new model corresponding to a given `model`'s reference. 
+
+This is a convenience function that provides a filtering function for 
+[`copy_model`](@ref). 
+
+## Note
+
+Model copy is not supported in `DIRECT` mode, i.e. when a model is constructed
+using the [`direct_model`](@ref) constructor instead of the [`Model`](@ref)
+constructor. Moreover, independently on whether an optimizer was provided at
+model construction, the new model will have no optimizer, i.e., an optimizer
+will have to be provided to the new model in the [`optimize!`](@ref) call.
+
+## Examples
+
+In the following example, a model `model` is constructed with a variable `x` and
+two constraints `cref` and `cref2`. This model has no solution, as the two 
+constraints are mutually exclusive. The solver is asked to compute a conflict
+with [`compute_conflict!`](@ref). The parts of `model` participating in the 
+conflict are then copied into a model `new_model`.
+```julia
+model = Model()
+@variable(model, x)
+@constraint(model, cref, x >= 2)
+@constraint(model, cref2, x <= 1)
+
+compute_conflict!(model)
+new_model, reference_map = copy_conflict(model)
+```
+"""
+function copy_conflict(model::Model)
+    filter_constraints = (cref) -> MOI.get(model, MOI.ConstraintConflictStatus(), cref) != MOI.NOT_IN_CONFLICT
+    new_model, reference_map = copy_model(model, filter_constraints=filter_constraints)
+    return new_model, reference_map
+end
+
 # Calling `deepcopy` over a JuMP model is not supported, nor planned to be
 # supported, because it would involve making a deep copy of the underlying
 # solver (behind a C pointer).
