@@ -54,13 +54,17 @@ Base.broadcastable(reference_map::ReferenceMap) = Ref(reference_map)
 
 
 """
-    copy_model(model::Model)
+    copy_model(model::Model; filter_constraints::Union{Nothing, Function}=nothing)
 
 Return a copy of the model `model` and a [`ReferenceMap`](@ref) that can be used
 to obtain the variable and constraint reference of the new model corresponding
 to a given `model`'s reference. A [`Base.copy(::AbstractModel)`](@ref) method
 has also been implemented, it is similar to `copy_model` but does not return
 the reference map.
+
+If the `filter_constraints` arguments is given, only the constraints for which
+this function returns `true` will be copied. This function is given a 
+constraint index as argument. 
 
 ## Note
 
@@ -85,7 +89,8 @@ x_new = reference_map[x]
 cref_new = reference_map[cref]
 ```
 """
-function copy_model(model::Model)
+function copy_model(model::Model, 
+                    filter_constraints::Union{Nothing, Function}=nothing)
     if mode(model) == DIRECT
         error("Cannot copy a model in `DIRECT` mode. Use the `Model` ",
               "constructor instead of the `direct_model` constructor to be ",
@@ -98,7 +103,8 @@ function copy_model(model::Model)
     # changed, the `index_map` gives the map between the indices of
     # `backend(model` and the indices of `backend(new_model)`.
     index_map = MOI.copy_to(backend(new_model), backend(model),
-                            copy_names = true)
+                            copy_names = true, 
+                            filter_constraints = filter_constraints)
 
     new_model.optimize_hook = model.optimize_hook
 
@@ -111,7 +117,10 @@ function copy_model(model::Model)
     reference_map = ReferenceMap(new_model, index_map)
 
     for (name, value) in object_dictionary(model)
-        new_model[name] = getindex.(reference_map, value)
+        if filter_constraints === nothing || 
+                (value isa ConstraintRef && filter_constraints(value))
+            new_model[name] = getindex.(reference_map, value)
+        end
     end
 
     for (key, data) in model.ext
