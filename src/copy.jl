@@ -120,6 +120,8 @@ function copy_model(model::Model;
         if filter_constraints === nothing || 
                 (value isa ConstraintRef && filter_constraints(value))
             new_model[name] = getindex.(reference_map, value)
+        elseif eltype(value) isa ConstraintRef && any(filter_constraints.(value))
+            new_model[name] = getindex.(reference_map, filter(filter_constraints, value))
         end
     end
 

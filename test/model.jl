@@ -501,10 +501,11 @@ function copy_model_style_mode(use_copy_model, caching_mode, filter_mode)
     model.optimize_hook = dummy_optimizer_hook
     data = DummyExtensionData(model)
     model.ext[:dummy] = data
-    @variable(model, x ≥ 0, Bin)
-    @variable(model, y ≤ 1, Int)
+    @variable(model, x[i = 1:2] ≥ 0, Bin)
+    @variable(model, y[i = 1:2] ≤ 1, Int)
     @variable(model, z == 0)
-    @constraint(model, cref, x + y == 1)
+    @constraint(model, cref[i = 1:2], x[i] + y[i] == 1)
+    @constraint(model, cref2, x[1] + x[2] == 1)
 
     if use_copy_model
         if filter_mode
@@ -523,6 +524,7 @@ function copy_model_style_mode(use_copy_model, caching_mode, filter_mode)
         reference_map[y] = new_model[:y]
         reference_map[z] = new_model[:z]
         reference_map[cref] = new_model[:cref]
+        reference_map[cref2] = new_model[:cref2]
     end
     @test caching_mode == @inferred MOIU.mode(JuMP.backend(new_model))
     @test new_model.optimize_hook === dummy_optimizer_hook
@@ -548,6 +550,10 @@ function copy_model_style_mode(use_copy_model, caching_mode, filter_mode)
         @test reference_map[JuMP.FixRef(z)] == @inferred JuMP.FixRef(z_new)
     end
 
+    cref2_new = reference_map[cref2]
+    @test cref2_new.model === new_model
+    @test "cref2" == @inferred JuMP.name(cref2_new)
+    
     if filter_mode
         @test_throws KeyError JuMP.object_dictionary(new_model)[JuMP.name(cref)]
     else
