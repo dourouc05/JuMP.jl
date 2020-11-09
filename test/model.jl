@@ -622,6 +622,81 @@ function test_haskey()
 function test_copy_filter()
     copy_model_style_mode(true, MOIU.AUTOMATIC, true)
 end
+    
+function test_copy_filter_array()
+    model = Model()
+    model.optimize_hook = dummy_optimizer_hook
+    data = DummyExtensionData(model)
+    model.ext[:dummy] = data
+    @variable(model, x[i=1:2] ≥ 0, container=Array)
+    @constraint(model, cref[i=1:2], x[i] == 1, container=Array)
+    filter_constraints = (cr) -> cr != cref[1]
+    new_model, reference_map = JuMP.copy_model(model, filter_constraints=filter_constraints)
+
+    @test new_model.optimize_hook === dummy_optimizer_hook
+    @test new_model.ext[:dummy].model === new_model
+    x1_new = reference_map[x[1]]
+    @test JuMP.owner_model(x1_new) === new_model
+    @test "x[1]" == @inferred JuMP.name(x1_new)
+    @test reference_map[JuMP.LowerBoundRef(x[1])] == @inferred JuMP.LowerBoundRef(x1_new)
+    
+    cref_1_new = reference_map[cref[1]]
+    @test cref_1_new.model === new_model
+    @test "cref[1]" == @inferred JuMP.name(cref_1_new)
+    cref_2_new = reference_map[cref[2]]
+    @test cref_2_new.model === new_model
+    @test "cref[2]" == @inferred JuMP.name(cref_2_new)
+end
+
+function test_copy_filter_denseaxisarray()
+    model = Model()
+    model.optimize_hook = dummy_optimizer_hook
+    data = DummyExtensionData(model)
+    model.ext[:dummy] = data
+    @variable(model, x[i=1:2] ≥ 0, container=DenseAxisArray)
+    @constraint(model, cref[i=1:2], x[i] == 1, container=DenseAxisArray)
+    filter_constraints = (cr) -> cr != cref[1]
+    new_model, reference_map = JuMP.copy_model(model, filter_constraints=filter_constraints)
+
+    @test new_model.optimize_hook === dummy_optimizer_hook
+    @test new_model.ext[:dummy].model === new_model
+    x1_new = reference_map[x[1]]
+    @test JuMP.owner_model(x1_new) === new_model
+    @test "x[1]" == @inferred JuMP.name(x1_new)
+    @test reference_map[JuMP.LowerBoundRef(x[1])] == @inferred JuMP.LowerBoundRef(x1_new)
+    
+    cref_1_new = reference_map[cref[1]]
+    @test cref_1_new.model === new_model
+    @test "cref[1]" == @inferred JuMP.name(cref_1_new)
+    cref_2_new = reference_map[cref[2]]
+    @test cref_2_new.model === new_model
+    @test "cref[2]" == @inferred JuMP.name(cref_2_new)
+end
+
+function test_copy_filter_sparseaxisarray()
+    model = Model()
+    model.optimize_hook = dummy_optimizer_hook
+    data = DummyExtensionData(model)
+    model.ext[:dummy] = data
+    @variable(model, x[i=1:2] ≥ 0, container=SparseAxisArray)
+    @constraint(model, cref[i=1:2], x[i] == 1, container=SparseAxisArray)
+    filter_constraints = (cr) -> cr != cref[1]
+    new_model, reference_map = JuMP.copy_model(model, filter_constraints=filter_constraints)
+
+    @test new_model.optimize_hook === dummy_optimizer_hook
+    @test new_model.ext[:dummy].model === new_model
+    x1_new = reference_map[x[1]]
+    @test JuMP.owner_model(x1_new) === new_model
+    @test "x[1]" == @inferred JuMP.name(x1_new)
+    @test reference_map[JuMP.LowerBoundRef(x[1])] == @inferred JuMP.LowerBoundRef(x1_new)
+    
+    cref_1_new = reference_map[cref[1]]
+    @test cref_1_new.model === new_model
+    @test "cref[1]" == @inferred JuMP.name(cref_1_new)
+    cref_2_new = reference_map[cref[2]]
+    @test cref_2_new.model === new_model
+    @test "cref[2]" == @inferred JuMP.name(cref_2_new)
+end
 
 function runtests()
     for name in names(@__MODULE__; all = true)
