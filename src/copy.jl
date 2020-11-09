@@ -118,9 +118,11 @@ function copy_model(model::Model;
 
     for (name, value) in object_dictionary(model)
         if filter_constraints === nothing || 
-                (value isa ConstraintRef && filter_constraints(value))
+                (value isa ConstraintRef && filter_constraints(value)) || 
+                value isa VariableRef || 
+                eltype(value) == VariableRef
             new_model[name] = getindex.(reference_map, value)
-        elseif eltype(value) isa ConstraintRef && any(filter_constraints.(value))
+        elseif eltype(value) == ConstraintRef && any(filter_constraints.(value))
             new_model[name] = getindex.(reference_map, filter(filter_constraints, value))
         end
     end

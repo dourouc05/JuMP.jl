@@ -501,11 +501,12 @@ function copy_model_style_mode(use_copy_model, caching_mode, filter_mode)
     model.optimize_hook = dummy_optimizer_hook
     data = DummyExtensionData(model)
     model.ext[:dummy] = data
-    @variable(model, x[i = 1:2] ≥ 0, Bin)
-    @variable(model, y[i = 1:2] ≤ 1, Int)
+    @variable(model, w[i=1:2] ≥ 0)
+    @variable(model, x ≥ 0, Bin)
+    @variable(model, y ≤ 1, Int)
     @variable(model, z == 0)
-    @constraint(model, cref[i = 1:2], x[i] + y[i] == 1)
-    @constraint(model, cref2, x[1] + x[2] == 1)
+    @constraint(model, cref, x + y == 1)
+    @constraint(model, cref2[i=1:2], w[i] + z == 1)
 
     if use_copy_model
         if filter_mode
@@ -516,15 +517,18 @@ function copy_model_style_mode(use_copy_model, caching_mode, filter_mode)
         end
     else
         new_model = copy(model)
-        reference_map = Dict{
-            Union{JuMP.VariableRef,JuMP.ConstraintRef},
-            Union{JuMP.VariableRef,JuMP.ConstraintRef},
-        }()
+        reference_map = Dict{Union{JuMP.VariableRef,
+                                    JuMP.ConstraintRef},
+                                Union{JuMP.VariableRef,
+                                    JuMP.ConstraintRef}}()
+        reference_map[w[1]] = new_model[:w][1]
+        reference_map[w[2]] = new_model[:w][2]
         reference_map[x] = new_model[:x]
         reference_map[y] = new_model[:y]
         reference_map[z] = new_model[:z]
         reference_map[cref] = new_model[:cref]
-        reference_map[cref2] = new_model[:cref2]
+        reference_map[cref2[1]] = new_model[:cref2][1]
+        reference_map[cref2[2]] = new_model[:cref2][2]
     end
     @test caching_mode == @inferred MOIU.mode(JuMP.backend(new_model))
     @test new_model.optimize_hook === dummy_optimizer_hook
@@ -550,9 +554,12 @@ function copy_model_style_mode(use_copy_model, caching_mode, filter_mode)
         @test reference_map[JuMP.FixRef(z)] == @inferred JuMP.FixRef(z_new)
     end
 
-    cref2_new = reference_map[cref2]
-    @test cref2_new.model === new_model
-    @test "cref2" == @inferred JuMP.name(cref2_new)
+    cref2_1_new = reference_map[cref2[1]]
+    @test cref2_1_new.model === new_model
+    @test "cref2[1]" == @inferred JuMP.name(cref2_1_new)
+    cref2_2_new = reference_map[cref2[2]]
+    @test cref2_2_new.model === new_model
+    @test "cref2[2]" == @inferred JuMP.name(cref2_2_new)
     
     if filter_mode
         @test_throws KeyError JuMP.object_dictionary(new_model)[JuMP.name(cref)]
