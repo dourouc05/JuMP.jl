@@ -62,7 +62,7 @@ to a given `model`'s reference. A [`Base.copy(::AbstractModel)`](@ref) method
 has also been implemented, it is similar to `copy_model` but does not return
 the reference map.
 
-If the `filter_constraints` arguments is given, only the constraints for which
+If the `filter_constraints` argument is given, only the constraints for which
 this function returns `true` will be copied. This function is given a 
 constraint index as argument. 
 
