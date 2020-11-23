@@ -209,12 +209,17 @@ constraints are mutually exclusive. The solver is asked to compute a conflict
 with [`compute_conflict!`](@ref). The parts of `model` participating in the 
 conflict are then copied into a model `new_model`.
 ```julia
-model = Model() # You must use a solver that supports conflict refining/IIS computation, like CPLEX or Gurobi
+model = Model() # You must use a solver that supports conflict refining/IIS 
+# computation, like CPLEX or Gurobi
 @variable(model, x)
 @constraint(model, cref, x >= 2)
 @constraint(model, cref2, x <= 1)
 
 compute_conflict!(model)
+if MOI.get(model, MOI.ConflictStatus()) != MOI.CONFLICT_FOUND
+    error("No conflict could be found for an infeasible model.")
+end
+
 new_model, reference_map = copy_conflict(model)
 ```
 """
