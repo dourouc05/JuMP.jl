@@ -625,16 +625,14 @@ end
     
 function test_copy_filter_array()
     model = Model()
-    model.optimize_hook = dummy_optimizer_hook
-    data = DummyExtensionData(model)
-    model.ext[:dummy] = data
-    @variable(model, x[i=1:2] ≥ 0, container=Array)
+    @variable(model, x[i=1:2], container=Array)
     @constraint(model, cref[i=1:2], x[i] == 1, container=Array)
+    @test num_constraints(model, GenericAffExpr{Float64, VariableRef}, MOI.EqualTo{Float64}) == 2
+
     filter_constraints = (cr) -> cr != cref[1]
     new_model, reference_map = JuMP.copy_model(model, filter_constraints=filter_constraints)
+    @test num_constraints(new_model, GenericAffExpr{Float64, VariableRef}, MOI.EqualTo{Float64}) == 1
 
-    @test new_model.optimize_hook === dummy_optimizer_hook
-    @test new_model.ext[:dummy].model === new_model
     x1_new = reference_map[x[1]]
     @test JuMP.owner_model(x1_new) === new_model
     @test "x[1]" == @inferred JuMP.name(x1_new)
