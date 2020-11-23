@@ -636,11 +636,7 @@ function test_copy_filter_array()
     x1_new = reference_map[x[1]]
     @test JuMP.owner_model(x1_new) === new_model
     @test "x[1]" == @inferred JuMP.name(x1_new)
-    @test reference_map[JuMP.LowerBoundRef(x[1])] == @inferred JuMP.LowerBoundRef(x1_new)
     
-    cref_1_new = reference_map[cref[1]]
-    @test cref_1_new.model === new_model
-    @test "cref[1]" == @inferred JuMP.name(cref_1_new)
     cref_2_new = reference_map[cref[2]]
     @test cref_2_new.model === new_model
     @test "cref[2]" == @inferred JuMP.name(cref_2_new)
@@ -663,9 +659,6 @@ function test_copy_filter_denseaxisarray()
     @test "x[1]" == @inferred JuMP.name(x1_new)
     @test reference_map[JuMP.LowerBoundRef(x[1])] == @inferred JuMP.LowerBoundRef(x1_new)
     
-    cref_1_new = reference_map[cref[1]]
-    @test cref_1_new.model === new_model
-    @test "cref[1]" == @inferred JuMP.name(cref_1_new)
     cref_2_new = reference_map[cref[2]]
     @test cref_2_new.model === new_model
     @test "cref[2]" == @inferred JuMP.name(cref_2_new)
@@ -688,9 +681,6 @@ function test_copy_filter_sparseaxisarray()
     @test "x[1]" == @inferred JuMP.name(x1_new)
     @test reference_map[JuMP.LowerBoundRef(x[1])] == @inferred JuMP.LowerBoundRef(x1_new)
     
-    cref_1_new = reference_map[cref[1]]
-    @test cref_1_new.model === new_model
-    @test "cref[1]" == @inferred JuMP.name(cref_1_new)
     cref_2_new = reference_map[cref[2]]
     @test cref_2_new.model === new_model
     @test "cref[2]" == @inferred JuMP.name(cref_2_new)
