@@ -313,6 +313,9 @@ end
 # Both constraints should participate in the conflict.
 MOI.get(model, MOI.ConstraintConflictStatus(), c1)
 MOI.get(model, MOI.ConstraintConflictStatus(), c2)
+
+# Get a copy of the model with only the constraints in the conflict.
+new_model, reference_map = copy_conflict(model)
 ```
 
 ## Multiple solutions
