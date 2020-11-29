@@ -680,6 +680,42 @@ function test_copy_filter_sparseaxisarray()
     @test "cref[2]" == @inferred JuMP.name(cref_2_new)
 end
 
+function test_copy_conflict()
+    model = Model()
+    @variable(model, x[i=1:2], container=SparseAxisArray)
+    @constraint(model, cref[i=1:2], x[i] == 1, container=SparseAxisArray)
+    @test num_constraints(model, GenericAffExpr{Float64, VariableRef}, MOI.EqualTo{Float64}) == 2
+    
+    set_optimizer(model, () -> MOIU.MockOptimizer(
+                                    MOIU.Model{Float64}(),
+                                    eval_objective_value=false))
+    JuMP.optimize!(model)
+
+    mockoptimizer = JuMP.backend(model).optimizer.model
+    MOI.set(mockoptimizer, MOI.TerminationStatus(), MOI.INFEASIBLE)
+    MOI.set(mockoptimizer, MOI.ConflictStatus(), MOI.CONFLICT_FOUND)
+    MOI.set(mockoptimizer, MOI.ConstraintConflictStatus(), JuMP.optimizer_index(cref[1]), MOI.IN_CONFLICT)
+    MOI.set(mockoptimizer, MOI.ConstraintConflictStatus(), JuMP.optimizer_index(cref[2]), MOI.NOT_IN_CONFLICT)
+
+    new_model, reference_map = JuMP.copy_conflict(model)
+    @test num_constraints(new_model, GenericAffExpr{Float64, VariableRef}, MOI.EqualTo{Float64}) == 1
+
+    x1_new = reference_map[x[1]]
+    @test JuMP.owner_model(x1_new) === new_model
+    @test "x[1]" == @inferred JuMP.name(x1_new)
+    
+    cref_1_new = reference_map[cref[1]]
+    @test cref_1_new.model === new_model
+    @test "cref[1]" == @inferred JuMP.name(cref_1_new)
+end
+
+function test_haskey()
+    model = Model()
+    @variable(model, p[i=1:10] >=  0)
+    @test haskey(model, :p)
+    @test !haskey(model, :i)
+end
+
 function runtests()
     for name in names(@__MODULE__; all = true)
         if !startswith("$(name)", "test_")
