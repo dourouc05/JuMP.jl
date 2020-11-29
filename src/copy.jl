@@ -64,7 +64,7 @@ the reference map.
 
 If the `filter_constraints` argument is given, only the constraints for which
 this function returns `true` will be copied. This function is given a 
-constraint index as argument. 
+constraint reference as argument. 
 
 ## Note
 
