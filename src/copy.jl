@@ -56,15 +56,8 @@ Base.broadcastable(reference_map::ReferenceMap) = Ref(reference_map)
 # be copied over.
 _should_copy_complete_object(_, _) = true
 _should_copy_complete_object(filter_constraints::Function, value::ConstraintRef) = filter_constraints(value)
-_should_copy_complete_object(filter_constraints::Function, value::AbstractArray{T}) where T <: ConstraintRef = all([filter_constraints(i) for i in eachindex(value)])
-# _should_copy_complete_object(_, _) = true
-# _should_copy_complete_object(filter_constraints::Function, value::ConstraintRef) = filter_constraints(value)
-# _should_copy_complete_object(filter_constraints::Function, value::AbstractArray{<:ConstraintRef}) = all([filter_constraints(i) for i in eachindex(value)]) # all(filter_constraints.(value))
-
-# # If _should_copy_object returns true for the same arguments, perform the copy. Otherwise, the behavior is undefined.
-# _copy_object(_, value) = value
-# _copy_object(_, value::ConstraintRef) = value
-# _copy_object(filter_constraints::Function, value::AbstractArray{<:ConstraintRef}) = filter(filter_constraints, value)
+_should_copy_complete_object(filter_constraints::Function, value::AbstractArray{T}) where T <: ConstraintRef = 
+    all([filter_constraints(value[i]) for i in eachindex(value)]) # all(filter_constraints.(value))
 
 """
     copy_model(model::Model; filter_constraints::Union{Nothing, Function}=nothing)
@@ -119,14 +112,9 @@ function copy_model(model::Model;
         filter_constraints = (cref) -> begin
             if cref isa MOI.ConstraintIndex
                 jump_cref = constraint_ref_with_index(model, cref)
-                @show jump_cref
                 return filter_constraints_user(jump_cref)
-            elseif cref isa ConstraintRef
-                return filter_constraints_user(cref)
             else
-                println("=>=>")
-                @show cref
-                println("<=<=")
+                return filter_constraints_user(cref)
             end
         end
     end
@@ -152,11 +140,6 @@ function copy_model(model::Model;
         if _should_copy_complete_object(filter_constraints, value)
             new_model[name] = getindex.(reference_map, value)
         end
-        # if _should_copy_complete_object(filter_constraints, value)
-        #     @show name
-        #     new_model[name] = getindex.(reference_map, value)
-        #     println("----------")
-        # end
     end
 
     for (key, data) in model.ext
