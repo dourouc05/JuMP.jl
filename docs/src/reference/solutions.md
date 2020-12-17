@@ -44,6 +44,7 @@ MOI.ConflictStatus
 MOI.ConflictStatusCode
 MOI.ConstraintConflictStatus
 MOI.ConflictParticipationStatusCode
+JuMP.copy_conflict
 
 lp_objective_perturbation_range
 lp_rhs_perturbation_range

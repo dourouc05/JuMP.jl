@@ -291,6 +291,10 @@ participates in the conflict or not using the attribute
 [`MOI.ConstraintConflictStatus`](@ref), which returns a
 [`MOI.ConflictParticipationStatusCode`](@ref).
 
+To create a new model containing only the constraints that participate in the
+conflict, use [`copy_conflict`](@ref). It may be helpful to write this model
+to a file for easier debugging using [`write_to_file`](@ref).
+
 For instance, this is how you can use this functionality:
 
 ```julia
