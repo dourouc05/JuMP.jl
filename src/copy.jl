@@ -52,6 +52,16 @@ end
 
 Base.broadcastable(reference_map::ReferenceMap) = Ref(reference_map)
 
+# Return a Boolean if the filtering function (1st argument) indicates that at least some part of the value should 
+# be copied over.
+_should_copy_object(_, _) = true
+_should_copy_object(filter_constraints::Function, value::ConstraintRef) = filter_constraints(value)
+_should_copy_object(filter_constraints::Function, value::AbstractArray{<:ConstraintRef}) = all([filter_constraints(i) for i in eachindex(value)]) # all(filter_constraints.(value))
+
+# # If _should_copy_object returns true for the same arguments, perform the copy. Otherwise, the behavior is undefined.
+# _copy_object(_, value) = value
+# _copy_object(_, value::ConstraintRef) = value
+# _copy_object(filter_constraints::Function, value::AbstractArray{<:ConstraintRef}) = filter(filter_constraints, value)
 
 """
     copy_model(model::Model; filter_constraints::Union{Nothing, Function}=nothing)
@@ -131,13 +141,8 @@ function copy_model(model::Model;
     reference_map = ReferenceMap(new_model, index_map)
 
     for (name, value) in object_dictionary(model)
-        if filter_constraints === nothing || 
-                (value isa ConstraintRef && filter_constraints(value)) || 
-                value isa VariableRef || 
-                eltype(value) == VariableRef
+        if _should_copy_object(filter_constraints, value)
             new_model[name] = getindex.(reference_map, value)
-        elseif eltype(value) == ConstraintRef && any(filter_constraints.(value))
-            new_model[name] = getindex.(reference_map, filter(filter_constraints, value))
         end
     end
 
