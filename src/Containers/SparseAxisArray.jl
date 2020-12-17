@@ -60,17 +60,6 @@ function Base.mapreduce(f, op, sa::SparseAxisArray)
 end
 Base.:(==)(sa1::SparseAxisArray, sa2::SparseAxisArray) = sa1.data == sa2.data
 
-# function Base.filter(f::Function, sa::SparseAxisArray{T,N,K}) where {T, N, K}
-#     l = sum(f.(values(sa.data)))
-#     d = similar(sa, T, l)
-#     for i in eachindex(sa)
-#         if f(sa[i])
-#             d[i] = sa[i]
-#         end
-#     end
-#     return d
-# end
-
 ############
 # Indexing #
 ############
