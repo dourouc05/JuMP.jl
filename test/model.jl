@@ -517,10 +517,10 @@ function copy_model_style_mode(use_copy_model, caching_mode, filter_mode)
         end
     else
         new_model = copy(model)
-        reference_map = Dict{Union{JuMP.VariableRef,
-                                    JuMP.ConstraintRef},
-                                Union{JuMP.VariableRef,
-                                    JuMP.ConstraintRef}}()
+        reference_map = Dict{
+            Union{JuMP.VariableRef,JuMP.ConstraintRef},
+            Union{JuMP.VariableRef,JuMP.ConstraintRef},
+        }()
         reference_map[w[1]] = new_model[:w][1]
         reference_map[w[2]] = new_model[:w][2]
         reference_map[x] = new_model[:x]
