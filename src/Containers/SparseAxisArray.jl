@@ -46,9 +46,12 @@ Base.IteratorSize(::Type{Base.Generator{<:SparseAxisArray}}) = Base.HasLength()
 Base.iterate(sa::SparseAxisArray, args...) = iterate(values(sa.data), args...)
 
 # A `length` argument can be given because `IteratorSize` is `HasLength`
-function Base.similar(::SparseAxisArray{S,N,K}, ::Type{T},
-                      length::Integer=0) where {S, T, N, K}
-    d = Dict{K, T}()
+function Base.similar(
+    ::SparseAxisArray{S,N,K},
+    ::Type{T},
+    length::Integer = 0,
+) where {S,T,N,K}
+    d = Dict{K,T}()
     if !iszero(length)
         sizehint!(d, length)
     end
