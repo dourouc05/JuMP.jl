@@ -619,6 +619,8 @@ function test_haskey()
     @variable(model, p[i = 1:10] >= 0)
     @test haskey(model, :p)
     @test !haskey(model, :i)
+end
+
 function test_copy_filter()
     copy_model_style_mode(true, MOIU.AUTOMATIC, true)
 end
@@ -707,13 +709,6 @@ function test_copy_conflict()
     cref_1_new = reference_map[cref[1]]
     @test cref_1_new.model === new_model
     @test "cref[1]" == @inferred JuMP.name(cref_1_new)
-end
-
-function test_haskey()
-    model = Model()
-    @variable(model, p[i=1:10] >=  0)
-    @test haskey(model, :p)
-    @test !haskey(model, :i)
 end
 
 function runtests()
